@@ -1,6 +1,9 @@
 package client;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
 import protocol.JsonProtocol;
 import util.ConsoleIO;
 import java.io.*;
@@ -40,12 +43,28 @@ public class Client {
                 String line = in.readLine();
                 if (line == null) throw new IOException("Servidor encerrou sem responder.");
                 try {
-                    JsonObject response = JsonProtocol.GSON.fromJson(line, JsonObject.class);
-                    if (response == null || !response.has("statusCode") || !response.has("message") || !response.has("data"))
-                        throw new IllegalStateException();
-                    int status = response.get("statusCode").getAsInt();
+                    JsonElement received = JsonProtocol.GSON.fromJson(line, JsonElement.class);
+                    if (received == null || !received.isJsonObject())
+                        throw new IOException("Resposta inválida do servidor: esperado um objeto JSON.");
+                    JsonObject response = received.getAsJsonObject();
+                    if (!response.has("statusCode"))
+                        throw new IOException("Resposta inválida do servidor: campo 'statusCode' ausente.");
+                    int status;
+                    try {
+                        status = response.get("statusCode").getAsBigDecimal().intValueExact();
+                    } catch (RuntimeException e) {
+                        throw new IOException("Resposta inválida do servidor: 'statusCode' deve ser um número inteiro.", e);
+                    }
+                    if (JsonProtocol.string(response, "message") == null)
+                        throw new IOException("Resposta inválida do servidor: campo 'message' ausente ou não é texto.");
+                    if (!response.has("data")) response.add("data", JsonNull.INSTANCE);
                     if (method.equals("login") && status == 200) {
-                        token = response.getAsJsonObject("data").get("token").getAsString();
+                        JsonElement payload = response.get("data");
+                        String receivedToken = payload.isJsonObject()
+                                ? JsonProtocol.string(payload.getAsJsonObject(), "token") : null;
+                        if (receivedToken == null || receivedToken.isBlank())
+                            throw new IOException("Resposta inválida do servidor: login aprovado sem 'data.token' válido.");
+                        token = receivedToken;
                         username = JsonProtocol.string(data, "username");
                         System.out.println("[CLIENTE] Login realizado.");
                     } else if (((method.equals("logout") || method.equals("deleteuser")) && status == 200)
@@ -55,8 +74,8 @@ public class Client {
                         System.out.println("[CLIENTE] Sessão encerrada.");
                     }
                     return response;
-                } catch (RuntimeException e) {
-                    throw new IOException("Resposta inválida do servidor.", e);
+                } catch (JsonParseException e) {
+                    throw new IOException("Resposta inválida do servidor: a mensagem recebida não é um JSON válido.", e);
                 }
             }
         }
