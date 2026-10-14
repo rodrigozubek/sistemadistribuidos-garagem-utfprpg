@@ -8,7 +8,7 @@
             <goal>org.codehaus.mojo:exec-maven-plugin:3.6.3:exec</goal>
         </goals>
         <properties>
-            <exec.vmArgs>--enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dgarage.consoleEncoding=native</exec.vmArgs>
+            <exec.vmArgs>--enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dgarage.server.consoleEncoding=native</exec.vmArgs>
             <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
             <exec.appArgs></exec.appArgs>
             <exec.executable>java</exec.executable>
@@ -22,7 +22,7 @@
             <goal>org.codehaus.mojo:exec-maven-plugin:3.6.3:exec</goal>
         </goals>
         <properties>
-            <exec.vmArgs>--enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dgarage.consoleEncoding=native</exec.vmArgs>
+            <exec.vmArgs>--enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dgarage.server.consoleEncoding=native</exec.vmArgs>
             <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
             <exec.mainClass>${packageClassName}</exec.mainClass>
             <exec.appArgs></exec.appArgs>

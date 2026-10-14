@@ -12,8 +12,15 @@ public final class ConsoleIO {
     private ConsoleIO() { }
 
     public static BufferedReader initialize() {
+        return initialize(null);
+    }
+
+    public static BufferedReader initialize(String application) {
         Console console = System.console();
         String encoding = System.getProperty("garage.consoleEncoding");
+        if (application != null) {
+            encoding = System.getProperty("garage." + application + ".consoleEncoding", encoding);
+        }
         Charset charset;
         if ("native".equalsIgnoreCase(encoding)) {
             charset = Charset.forName(System.getProperty("native.encoding", Charset.defaultCharset().name()));

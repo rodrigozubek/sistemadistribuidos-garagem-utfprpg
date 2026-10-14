@@ -26,7 +26,12 @@ public class Client {
         request.addProperty("method", method);
         request.add("data", data);
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), 5000);
+            try {
+                socket.connect(new InetSocketAddress(host, port), 5000);
+            } catch (SocketTimeoutException e) {
+                throw new IOException("Tempo limite para conectar ao servidor. "
+                        + "Verifique o IP, a porta e se o servidor está em execução.", e);
+            }
             socket.setSoTimeout(10000);
             try (PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
@@ -65,7 +70,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        BufferedReader keyboard = ConsoleIO.initialize();
+        BufferedReader keyboard = ConsoleIO.initialize("client");
         try {
             String host = args.length > 0 ? args[0] : prompt(keyboard, "IP do servidor: ");
             int port = Integer.parseInt(args.length > 1 ? args[1] : prompt(keyboard, "Porta do servidor: "));

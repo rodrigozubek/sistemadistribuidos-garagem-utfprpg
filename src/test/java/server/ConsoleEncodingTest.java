@@ -16,13 +16,18 @@ class ConsoleEncodingTest {
 
     private String runWithEncoding(String mainClass, String input, String consoleEncoding,
                                    Charset charset, String... args) throws Exception {
+        return runWithProperty(mainClass, input, "garage.consoleEncoding", consoleEncoding, charset, args);
+    }
+
+    private String runWithProperty(String mainClass, String input, String consoleProperty, String consoleEncoding,
+                                   Charset charset, String... args) throws Exception {
         String executable = System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java";
         var command = new java.util.ArrayList<String>();
         command.add(Path.of(System.getProperty("java.home"), "bin", executable).toString());
         // Simula a saída Windows que causava caracteres inválidos no painel UTF-8.
         command.add("-Dstdout.encoding=windows-1252");
         command.add("-Dstderr.encoding=windows-1252");
-        if (consoleEncoding != null) command.add("-Dgarage.consoleEncoding=" + consoleEncoding);
+        if (consoleEncoding != null) command.add("-D" + consoleProperty + "=" + consoleEncoding);
         command.add("-cp");
         command.add(System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")));
         command.add(mainClass);
@@ -56,7 +61,7 @@ class ConsoleEncodingTest {
 
     @Test void serverErrorsMatchNativeConsoleEncoding() throws Exception {
         Charset nativeCharset = Charset.forName(System.getProperty("native.encoding", Charset.defaultCharset().name()));
-        String output = runWithEncoding("server.Server", "", "native", nativeCharset, "0");
+        String output = runWithProperty("server.Server", "", "garage.server.consoleEncoding", "native", nativeCharset, "0");
         assertTrue(output.contains("Porta inválida"), output);
     }
 
@@ -65,5 +70,17 @@ class ConsoleEncodingTest {
                 Charset.forName("windows-1252"), "127.0.0.1", "5000");
         assertTrue(output.contains("Cadastrar usuário"), output);
         assertTrue(output.contains("Opção inválida."), output);
+    }
+
+    @Test void serverEncodingDoesNotChangeClientMenu() throws Exception {
+        for (String mainClass : java.util.List.of("client.Client",
+                "br.edu.utfpr.sistemasdistribuidos.sistemagaragem.SistemaGaragem")) {
+            String output = runWithProperty(mainClass, "9\n0\n", "garage.server.consoleEncoding", "native",
+                    StandardCharsets.UTF_8, "127.0.0.1", "5000");
+            assertTrue(output.contains("Cadastrar usuário"), output);
+            assertTrue(output.contains("Opção: "), output);
+            assertTrue(output.contains("Opção inválida."), output);
+            assertFalse(output.contains("\uFFFD"), output);
+        }
     }
 }

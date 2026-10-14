@@ -37,7 +37,7 @@ public class Server extends Thread {
     }
 
     public static void main(String[] args) {
-        BufferedReader keyboard = ConsoleIO.initialize();
+        BufferedReader keyboard = ConsoleIO.initialize("server");
         try {
             String value;
             if (args.length > 0) value = args[0];
