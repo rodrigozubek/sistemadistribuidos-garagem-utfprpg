@@ -150,6 +150,25 @@ class UserServiceTest {
         login("joao");
     }
 
+    @Test void passwordChangeRejectsCurrentPasswordAndPreservesPersistedUser() throws Exception {
+        register("joao");
+        JsonObject auth = data("token", login("joao"), "username", "joao",
+                "oldPassword", "$Password123", "newPassword", "$Password123");
+        Response error = call("updateuserpassword", auth);
+        assertEquals(400, error.getStatusCode());
+        assertEquals("A nova senha deve ser diferente da senha atual", error.getMessage());
+        assertNull(error.getData());
+        assertEquals("$Password123", new UserRepository(file).load().get("joao").getPassword());
+        login("joao");
+
+        auth.addProperty("newPassword", "NovaSenha!1");
+        assertEquals(200, call("updateuserpassword", auth).getStatusCode());
+        auth.addProperty("oldPassword", "NovaSenha!1");
+        assertEquals(400, call("updateuserpassword", auth).getStatusCode());
+        service = new UserService(new UserRepository(file));
+        assertEquals(200, call("login", data("username", "joao", "password", "NovaSenha!1")).getStatusCode());
+    }
+
     @Test void malformedRequestsAndNullResponseData() {
         assertEquals(400, service.handle(null).getStatusCode());
         assertEquals(400, service.handle(new JsonObject()).getStatusCode());

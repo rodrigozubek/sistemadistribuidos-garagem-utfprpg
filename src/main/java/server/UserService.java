@@ -84,6 +84,9 @@ public final class UserService {
                         return response(401, "Senha atual incorreta");
                     }
                     String password = JsonProtocol.string(data, "newPassword");
+                    if (user.getPassword().equals(password)) {
+                        return response(400, "A nova senha deve ser diferente da senha atual");
+                    }
                     if (!validPassword(password)) return response(400, "Senha fora do padrão");
                     replace(username, new User(user.getName(), username, password));
                     return response(200, "Senha atualizada com sucesso");
